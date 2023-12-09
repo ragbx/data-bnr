@@ -74,7 +74,7 @@ class Azrael2list():
     def list_files(self, **kwargs):
         results = []
         for dir_path, dirs, files in walk(self.root_path):
-            #print(dir_path)
+            print(dir_path)
             for file in files:
                 file_path = join(dir_path, file)
                 file_data = {}
@@ -99,7 +99,7 @@ class Azrael2list():
         for dir_path, dirs, files in walk(list_path):
             files = sorted(files)
             for file in files:
-                #print(file)
+                print(file)
                 df = pd.read_csv(join(dir_path, file))
                 for file_data in df.to_dict(orient='records'):
                     i += 1
@@ -111,9 +111,10 @@ class Azrael2list():
                         j += 1
                         file_number = int2string(j, leading_zeros=8)
                         results_df = pd.DataFrame(results)
-                        results_df['path'] = results_df['path'].str.replace(self.root_path, "")
+                        results_df = results_df['path'].str.replace(self.root_path, "")
                         results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
                         results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
+                        results = []
                         
                     
 
