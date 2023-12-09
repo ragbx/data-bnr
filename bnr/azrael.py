@@ -111,6 +111,7 @@ class Azrael2list():
                         j += 1
                         file_number = int2string(j, leading_zeros=8)
                         results_df = pd.DataFrame(results)
+                        results_df = results_df['path'].str.replace(self.root_path, "")
                         results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
                         results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
                         
