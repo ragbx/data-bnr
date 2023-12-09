@@ -74,7 +74,7 @@ class Azrael2list():
     def list_files(self, **kwargs):
         results = []
         for dir_path, dirs, files in walk(self.root_path):
-            #print(dir_path)
+            print(dir_path)
             for file in files:
                 file_path = join(dir_path, file)
                 file_data = {}
