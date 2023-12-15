@@ -4,6 +4,7 @@ import re
 import pandas as pd
 from os import walk
 from os.path import join
+import json
 
 def clean_tmp(tmp, level):
 #  [subfonds] [series] [subseries] [file] [subfile] [item]
@@ -82,6 +83,48 @@ class RbxEadParser():
                     self.metadata_archdesc[archdesc_el.tag] = archdesc_el.text
                 elif archdesc_el.tag == 'dsc':
                      self.dsc = archdesc_el
+
+    def get_content(self, file_out):
+        self.level = {}
+        eadheader = self.tree.xpath("/ead/eadheader")[0]
+        self.level['eadid'] = eadheader.xpath("//eadid")[0].text
+        self.level['titleproper'] = eadheader.xpath("//titleproper")[0].text
+        archdesc = self.tree.xpath("/ead/archdesc/did")[0]
+        self.level['archdesc_did_unitid'] = archdesc.xpath("//unitid")[0].text
+        self.level['archdesc_did_unittitle'] = archdesc.xpath("//unittitle")[0].text
+        next_level = []
+        if self.tree.xpath("/ead/archdesc/dsc/c"):
+            for c0 in self.tree.xpath("/ead/archdesc/dsc/c"):
+                if c0.xpath("c"):
+                    next_level0 = []
+                    for c1 in c0.xpath("c"):
+                        if c1.xpath("c"):
+                            next_level1 = []
+                            for c2 in c1.xpath("c"):
+                                if c2.xpath("c"):
+                                    next_level2 = []
+                                    for c3 in c2.xpath("c"):
+                                        if c3.xpath("c"):
+                                            next_level3 = []
+                                            for c4 in c3.xpath("c"):
+                                                next_level3.append(c4.xpath("did/unitid")[0].text)
+                                            next_level2.append({c3.xpath("did/unitid")[0].text: next_level3})
+                                        else:
+                                            next_level2.append(c3.xpath("did/unitid")[0].text)
+                                    next_level1.append({c2.xpath("did/unitid")[0].text: next_level2})
+                                else:
+                                    next_level1.append(c2.xpath("did/unitid")[0].text)
+                            next_level0.append({c1.xpath("did/unitid")[0].text: next_level1})
+                        else:
+                            next_level0.append(c1.xpath("did/unitid")[0].text)
+                    next_level.append({c0.xpath("did/unitid")[0].text: next_level0})
+                else:
+                    next_level.append(c0.xpath("did/unitid")[0].text)
+        self.level['next_level'] = next_level
+
+        out_file = open(file_out, "w")
+        json.dump(self.level, out_file, indent = 4)
+        out_file.close()
 
     def process_dsc_components(self, c, tmp = None):
         level = c.attrib['level']
