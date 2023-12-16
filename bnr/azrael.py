@@ -121,19 +121,6 @@ class Azrael2list():
                                     for k, v in tags.items():
                                         tags2json[k] = v.printable
                                     exif_results.append({'file_path': file_path, 'exif': tags2json})
-                                     if len(results) == 1000:
-                                         j += 1
-                                         j_str = str(j).zfill(5)
-                                         json_str = json.dumps(results)
-                                         json_bytes = json_str.encode('utf-8')
-                                         with gzip.open(f"results/{today}_bnr_exif_{j_str}.json.gz", 'w') as fout:
-                                             fout.write(json_bytes)
-                                         results = []
-
-
-
-
-
                         results.append(file_data)
                         k = i % result_size
                         if k == 0:
@@ -163,7 +150,6 @@ class Azrael2list():
                         with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
                             fout.write(json_bytes)
                         exif_results = []
-
 
 
 class Azrael2analysis():
