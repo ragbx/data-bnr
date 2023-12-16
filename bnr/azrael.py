@@ -165,6 +165,7 @@ class Azrael2list():
                         exif_results = []
 
 
+
 class Azrael2analysis():
     def __init__(self):
         self.today = datetime.now().strftime('%Y%m%d')
