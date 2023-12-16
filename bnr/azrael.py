@@ -96,8 +96,9 @@ class Azrael2list():
             file_number = int2string(i, leading_zeros=8)
             df.to_csv(join("data", "tmp", f"tmp_bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz"), index=False)
 
-    def process_lists(self, list_path = join("data", "tmp"), result_size=100):
+    def process_lists(self, list_path = join("data", "tmp"), result_size=100, exif=False):
         results = []
+        exif_results = []
         i = 0
         j = 0
         for dir_path, dirs, files in walk(list_path):
@@ -109,6 +110,30 @@ class Azrael2list():
                         i += 1
                         file_path = join(file_data['path'], file_data['name'])
                         file_data["md5"] = get_md5hash(file_path)
+
+                        if exif:
+                            mimetype = get_mimetype(file_path)
+                            if mimetype:
+                                if mimetype[:5] == "image":
+                                    f = open(file_path, 'rb')
+                                    tags = exifread.process_file(f, details=False)
+                                    tags2json = {}
+                                    for k, v in tags.items():
+                                        tags2json[k] = v.printable
+                                    exif_results.append({'file_path': file_path, 'exif': tags2json})
+                                     if len(results) == 1000:
+                                         j += 1
+                                         j_str = str(j).zfill(5)
+                                         json_str = json.dumps(results)
+                                         json_bytes = json_str.encode('utf-8')
+                                         with gzip.open(f"results/{today}_bnr_exif_{j_str}.json.gz", 'w') as fout:
+                                             fout.write(json_bytes)
+                                         results = []
+
+
+
+
+
                         results.append(file_data)
                         k = i % result_size
                         if k == 0:
@@ -119,13 +144,25 @@ class Azrael2list():
                             results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
                             results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
                             results = []
+                            if exif:
+                                json_str = json.dumps(exif_results)
+                                json_bytes = json_str.encode('utf-8')
+                                with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
+                                    fout.write(json_bytes)
+                                exif_results = []
+
                     j += 1
                     file_number = int2string(j, leading_zeros=8)
                     results_df = pd.DataFrame(results)
                     results_df['path'] = results_df['path'].str.replace(self.root_path, "")
                     results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
                     results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
-
+                    if exif:
+                        json_str = json.dumps(exif_results)
+                        json_bytes = json_str.encode('utf-8')
+                        with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
+                            fout.write(json_bytes)
+                        exif_results = []
 
 
 class Azrael2analysis():
