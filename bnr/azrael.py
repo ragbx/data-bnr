@@ -44,16 +44,16 @@ def get_extension_by_mimetype(mimetype):
 
 def convert_size(size, from_size='o', to_size='go'):
     if (from_size == 'o') & (to_size == 'ko'):
-        n = 1024 ^ 1
+        n = 1024
         return round( size / n, 2)
     elif (from_size == 'o') & (to_size == 'mo'):
-        n = 1024 ^ 2
+        n = 1024 ** 2
         return round( size / n, 2)
     elif (from_size == 'o') & (to_size == 'go'):
-        n = 1024 ^ 3
+        n = 1024 ** 3
         return round( size / n, 2)
     elif (from_size == 'o') & (to_size == 'to'):
-        n = 1024 ^ 4
+        n = 1024 ** 4
         return round( size / n, 2)
 
 def split_every_n_rows(dataframe, chunk_size=2):
@@ -85,8 +85,8 @@ class Azrael2list():
                 file_data["name"] = file
                 file_data["path"] = dir_path
                 file_data["size"] = getsize(file_path)
-                file_data["creation_date"] = getctime(file_path)
-                file_data["last_modification_date"] = getmtime(file_path)
+                file_data["last_content_modification_date"] = getctime(file_path)
+                file_data["last_metadata_modification_date"] = getmtime(file_path)
                 list_results.append(file_data)
         self.list_result = pd.DataFrame(list_results).sort_values(by=['path', 'name'])
 
@@ -119,7 +119,7 @@ class Azrael2list():
                             file_number = int2string(j, leading_zeros=8)
                             results_df = pd.DataFrame(results)
                             results_df['path'] = results_df['path'].str.replace(self.root_path, "")
-                            results_df = results_df[['name', 'path', 'md5', 'size', 'creation_date', 'last_modification_date']]
+                            results_df = results_df[['name', 'path', 'md5', 'size', 'last_content_modification_date', 'last_metadata_modification_date']]
                             results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
                             results = []
 
@@ -146,7 +146,7 @@ class Azrael2list():
                         file_number = int2string(j, leading_zeros=8)
                         results_df = pd.DataFrame(results)
                         results_df['path'] = results_df['path'].str.replace(self.root_path, "")
-                        results_df = results_df[['name', 'path', 'md5', 'size', 'creation_date', 'last_modification_date']]
+                        results_df = results_df[['name', 'path', 'md5', 'size', 'last_content_modification_date', 'last_metadata_modification_date']]
                         results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
                     if len(exif_results) > 0:
                         if exif:
@@ -184,19 +184,24 @@ class Azrael2analysis():
     def dates2dt(self):
         # traitement des dates création et modification
         # on renomme les colonnes initiales
-        self.az = self.az.rename(columns={'creation_date':'tmp_creation_date',
-                                'last_modification_date':'tmp_last_modification_date'})
+        self.az = self.az.rename(columns={'last_content_modification_date':'tmp_last_content_modification_date',
+                                'last_metadata_modification_date':'tmp_last_metadata_modification_date'})
         # on transforme les colonnes dates en objets datetime
-        self.az['tmp_creation_date_dt'] = pd.to_datetime(self.az['tmp_creation_date'], unit='s')
-        self.az['tmp_last_modification_date_dt'] = pd.to_datetime(self.az['tmp_last_modification_date'], unit='s')
+        self.az['tmp_last_content_modification_date_dt'] = pd.to_datetime(self.az['tmp_last_content_modification_date'], unit='s')
+        self.az['tmp_last_metadata_modification_date_dt'] = pd.to_datetime(self.az['tmp_last_metadata_modification_date'], unit='s')
         # on vérifie que la création est bien la création et vice-versa
-        self.az.loc[self.az['tmp_creation_date_dt'] <= self.az['tmp_last_modification_date_dt'], 'creation_date_dt'] = self.az['tmp_creation_date_dt']
-        self.az.loc[self.az['tmp_creation_date_dt'] > self.az['tmp_last_modification_date_dt'], 'creation_date_dt'] = self.az['tmp_last_modification_date_dt']
-        self.az.loc[self.az['tmp_creation_date_dt'] >= self.az['tmp_last_modification_date_dt'], 'last_modification_date_dt'] = self.az['tmp_creation_date_dt']
-        self.az.loc[self.az['tmp_creation_date_dt'] < self.az['tmp_last_modification_date_dt'], 'last_modification_date_dt'] = self.az['tmp_last_modification_date_dt']
+        self.az.loc[self.az['tmp_last_content_modification_date_dt'] <= self.az['tmp_last_metadata_modification_date_dt'], 'last_content_modification_date_dt'] = self.az['tmp_last_content_modification_date_dt']
+        self.az.loc[self.az['tmp_last_content_modification_date_dt'] > self.az['tmp_last_metadata_modification_date_dt'], 'last_content_modification_date_dt'] = self.az['tmp_last_metadata_modification_date_dt']
+        self.az.loc[self.az['tmp_last_content_modification_date_dt'] >= self.az['tmp_last_metadata_modification_date_dt'], 'last_metadata_modification_date_dt'] = self.az['tmp_last_content_modification_date_dt']
+        self.az.loc[self.az['tmp_last_content_modification_date_dt'] < self.az['tmp_last_metadata_modification_date_dt'], 'last_metadata_modification_date_dt'] = self.az['tmp_last_metadata_modification_date_dt']
 
-        #self.az['creation_date_'] = self.az['creation_date_dt'].dt.strftime('%Y-%m-%d')
-        #self.az['last_modification_date_'] = self.az['last_modification_date_dt'].dt.strftime('%Y-%m-%d')
+        #self.az['last_content_modification_date_'] = self.az['last_content_modification_date_dt'].dt.strftime('%Y-%m-%d')
+        #self.az['last_metadata_modification_date_'] = self.az['last_metadata_modification_date_dt'].dt.strftime('%Y-%m-%d')
+
+    def get_extension_mimetype(self):
+        self.az['extension'] = self.az['name'].str.extract(r'.*(\..*)$')
+        self.az['mimetype'] = self.az['name'].apply(get_mimetype)
+        self.az['guessed_extension'] = self.az['mimetype'].apply(get_extension_by_mimetype)
 
     def export_az(self, columns, filename, format):
         if columns:
