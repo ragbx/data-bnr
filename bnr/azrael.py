@@ -20,6 +20,10 @@ from os.path import join, getsize, getmtime, getctime
 import hashlib
 
 import mimetypes
+import exifread
+
+import json
+import gzip
 
 def get_md5hash(name):
     hash_md5 = hashlib.md5()
@@ -52,10 +56,6 @@ def convert_size(size, from_size='o', to_size='go'):
         n = 1024 ^ 4
         return round( size / n, 2)
 
-def convert_time(time):
-    if not np.isnan(time):
-        return datetime.fromtimestamp(time)
-
 def split_every_n_rows(dataframe, chunk_size=2):
     chunks = []
     num_chunks = len(dataframe) // chunk_size + 1
@@ -76,7 +76,7 @@ class Azrael2list():
             self.root_path = kwargs.get('root_path')
 
     def list_files(self, **kwargs):
-        results = []
+        list_results = []
         for dir_path, dirs, files in walk(self.root_path):
             print(dir_path)
             for file in files:
@@ -87,13 +87,13 @@ class Azrael2list():
                 file_data["size"] = getsize(file_path)
                 file_data["creation_date"] = getctime(file_path)
                 file_data["last_modification_date"] = getmtime(file_path)
-                results.append(file_data)
-        self.list_result = pd.DataFrame(results).sort_values(by=['path', 'name'])
+                list_results.append(file_data)
+        self.list_result = pd.DataFrame(list_results).sort_values(by=['path', 'name'])
 
     def export_list(self, chunksize=400):
-        for i, df in enumerate(split_every_n_rows(self.list_result, chunk_size=chunksize)):
-            i += 1
-            file_number = int2string(i, leading_zeros=8)
+        for n, df in enumerate(split_every_n_rows(self.list_result, chunk_size=chunksize)):
+            n += 1
+            file_number = int2string(n, leading_zeros=8)
             df.to_csv(join("data", "tmp", f"tmp_bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz"), index=False)
 
     def process_lists(self, list_path = join("data", "tmp"), result_size=100, exif=False):
@@ -105,11 +105,23 @@ class Azrael2list():
             files = sorted(files)
             for file in files:
                 if file[0] != '.':
+                    print(file)
                     df = pd.read_csv(join(dir_path, file))
                     for file_data in df.to_dict(orient='records'):
                         i += 1
                         file_path = join(file_data['path'], file_data['name'])
                         file_data["md5"] = get_md5hash(file_path)
+
+                        results.append(file_data)
+                        k = i % result_size
+                        if k == 0:
+                            j += 1
+                            file_number = int2string(j, leading_zeros=8)
+                            results_df = pd.DataFrame(results)
+                            results_df['path'] = results_df['path'].str.replace(self.root_path, "")
+                            results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
+                            results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
+                            results = []
 
                         if exif:
                             mimetype = get_mimetype(file_path)
@@ -121,35 +133,28 @@ class Azrael2list():
                                     for k, v in tags.items():
                                         tags2json[k] = v.printable
                                     exif_results.append({'file_path': file_path, 'exif': tags2json})
-                        results.append(file_data)
-                        k = i % result_size
-                        if k == 0:
-                            j += 1
-                            file_number = int2string(j, leading_zeros=8)
-                            results_df = pd.DataFrame(results)
-                            results_df['path'] = results_df['path'].str.replace(self.root_path, "")
-                            results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
-                            results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
-                            results = []
-                            if exif:
+
+                            if k == 0:
                                 json_str = json.dumps(exif_results)
                                 json_bytes = json_str.encode('utf-8')
                                 with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
                                     fout.write(json_bytes)
                                 exif_results = []
 
-                    j += 1
-                    file_number = int2string(j, leading_zeros=8)
-                    results_df = pd.DataFrame(results)
-                    results_df['path'] = results_df['path'].str.replace(self.root_path, "")
-                    results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
-                    results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
-                    if exif:
-                        json_str = json.dumps(exif_results)
-                        json_bytes = json_str.encode('utf-8')
-                        with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
-                            fout.write(json_bytes)
-                        exif_results = []
+                    if len(results) > 0:
+                        j += 1
+                        file_number = int2string(j, leading_zeros=8)
+                        results_df = pd.DataFrame(results)
+                        results_df['path'] = results_df['path'].str.replace(self.root_path, "")
+                        results_df = results_df[['name', 'path', 'md5', 'creation_date', 'last_modification_date']]
+                        results_df.to_csv(join("data", f"bnr_{self.code_disk}_{file_number}_{self.today}.csv.gz") , index=False)
+                    if len(exif_results) > 0:
+                        if exif:
+                            json_str = json.dumps(exif_results)
+                            json_bytes = json_str.encode('utf-8')
+                            with gzip.open(join("data", f"bnr_exif_{self.code_disk}_{file_number}_{self.today}.json.gz"), 'w') as fout:
+                                fout.write(json_bytes)
+                            exif_results = []
 
 
 class Azrael2analysis():
@@ -175,6 +180,23 @@ class Azrael2analysis():
     def split_path(self, n=4):
         cols = [f"path{n}" for n in range(n+1)]
         self.az[cols] = self.az['path'].str.split('/', n=n, expand=True)
+
+    def dates2dt(self):
+        # traitement des dates création et modification
+        # on renomme les colonnes initiales
+        self.az = self.az.rename(columns={'creation_date':'tmp_creation_date',
+                                'last_modification_date':'tmp_last_modification_date'})
+        # on transforme les colonnes dates en objets datetime
+        self.az['tmp_creation_date_dt'] = pd.to_datetime(self.az['tmp_creation_date'], unit='s')
+        self.az['tmp_last_modification_date_dt'] = pd.to_datetime(self.az['tmp_last_modification_date'], unit='s')
+        # on vérifie que la création est bien la création et vice-versa
+        self.az.loc[self.az['tmp_creation_date_dt'] <= self.az['tmp_last_modification_date_dt'], 'creation_date_dt'] = self.az['tmp_creation_date_dt']
+        self.az.loc[self.az['tmp_creation_date_dt'] > self.az['tmp_last_modification_date_dt'], 'creation_date_dt'] = self.az['tmp_last_modification_date_dt']
+        self.az.loc[self.az['tmp_creation_date_dt'] >= self.az['tmp_last_modification_date_dt'], 'last_modification_date_dt'] = self.az['tmp_creation_date_dt']
+        self.az.loc[self.az['tmp_creation_date_dt'] < self.az['tmp_last_modification_date_dt'], 'last_modification_date_dt'] = self.az['tmp_last_modification_date_dt']
+
+        #self.az['creation_date_'] = self.az['creation_date_dt'].dt.strftime('%Y-%m-%d')
+        #self.az['last_modification_date_'] = self.az['last_modification_date_dt'].dt.strftime('%Y-%m-%d')
 
     def export_az(self, columns, filename, format):
         if columns:

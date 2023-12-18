@@ -7,9 +7,11 @@ MED_MS
 5992 copiés dans BNR_VERIF le 05/01/2021
 """
 
-root_path = 'E:/'
+root_path = 'E:/IMAGES/'
 az2list = Azrael2list(root_path=root_path, code_disk='D002')
-az2list.list_files()
-az2list.export_list(chunksize=1000)
+
+#az2list.list_files()
+
+#az2list.export_list(chunksize=1000)
 
 az2list.process_lists(result_size=1000, exif=True)
