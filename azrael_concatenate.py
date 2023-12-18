@@ -5,16 +5,15 @@ import time
 
 today = time.strftime('%Y%m%d')
 
-root_path = "data/bnr_D001"
+root_path = join("data", "bnr_D002")
 
 r = []
-i = 0
 for dir_path, dirs, files in walk(root_path):
-    for file in files:
-        i +=  1
-        print(i)
-        file_path = join(dir_path, file)
-        df_file = pd.read_csv(file_path)
-        r.extend(df_file.to_dict(orient='records'))
+    for file in sorted(files):
+        if file[-6:] == 'csv.gz':
+            print(file)
+            file_path = join(dir_path, file)
+            df_file = pd.read_csv(file_path)
+            r.extend(df_file.to_dict(orient='records'))
 df = pd.DataFrame(r)
-df.to_csv("data/bnr_d001_20231210.csv.gz", index=False)
+df.to_csv(join("data", "bnr_d002_20231216.csv.gz"), index=False)
