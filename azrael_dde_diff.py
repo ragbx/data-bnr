@@ -6,7 +6,7 @@ root_path = "data"
 # on créée deux dataframes à comparer
 
 azrael_prefix = "d001"
-dde_prefix = [f"d{n :03d}" for n in range(2, 18)]
+dde_prefix = [f"d{n :03d}" for n in range(2, 27)]
 
 files = [f for f in listdir(root_path) if f[-6:] == 'csv.gz']
 dde_df = pd.DataFrame()

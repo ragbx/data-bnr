@@ -6,8 +6,8 @@ import time
 today = time.strftime('%Y%m%d')
 
 root_path = join("/media", "fpichenot", "ragbx", "data-bnr-trans")
-prefix = "d016"
-date = "20231227"
+prefix = "d022"
+date = "20231229"
 
 
 r = []
@@ -20,4 +20,4 @@ for dir_path, dirs, files in walk(root_path):
                 df_file = pd.read_csv(file_path)
                 r.extend(df_file.to_dict(orient='records'))
 df = pd.DataFrame(r)
-df.to_csv(join("data", f"bnr_{prefix}_{date}_pbMD5.csv.gz"), index=False)
+df.to_csv(join("data", f"bnr_{prefix}_{date}.csv.gz"), index=False)
