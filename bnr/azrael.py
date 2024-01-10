@@ -203,6 +203,16 @@ class Azrael2analysis():
         self.az['mimetype'] = self.az['name'].apply(get_mimetype)
         self.az['guessed_extension'] = self.az['mimetype'].apply(get_extension_by_mimetype)
 
+        self.az['file_type'] = self.az['mimetype']
+        self.az.loc[self.az['file_type'] == 'image/jpeg', 'file_type'] = 'jpeg'
+        self.az.loc[self.az['file_type'] == 'image/tiff', 'file_type'] = 'tiff'
+        self.az.loc[self.az['file_type'] == 'text/plain', 'file_type'] = 'ocr txt'
+        self.az.loc[self.az['file_type'] == 'application/pdf', 'file_type'] = 'pdf'
+        self.az.loc[self.az['file_type'] == 'application/xml', 'file_type'] = 'ocr xml'
+        self.az.loc[self.az['file_type'].str[:4] == 'vide', 'file_type'] = 'video'
+        self.az.loc[self.az['file_type'].str[:4] == 'audi', 'file_type'] = 'audio'
+        self.az.loc[~self.az['file_type'].isin(['jpeg', 'tiff', 'pdf', 'ocr txt', 'ocr xml', 'video', 'audio']), 'file_type'] = 'autre'
+
     def export_az(self, columns, filename, format):
         if columns:
             self.az2export = self.az[columns]

@@ -18,6 +18,7 @@ for file in files:
         dde_df_part = pd.read_csv(join(root_path, file))
         dde_df_part['prefix'] = file[4:8]
         dde_df = pd.concat([dde_df, dde_df_part])
+#dde_df.to_csv(join(root_path, "bnr_dXXX_20231230.csv.gz"), index=False)
 
 # fichiers pour lesquels on a les md5
 dde_df_md5ok = dde_df[~dde_df['md5'].isna()]
@@ -30,3 +31,6 @@ dde_df_md5ko = dde_df[dde_df['md5'].isna()]
 dde_df_md5ko_notinazrael = dde_df_md5ko[~dde_df_md5ko['name'].isin(azrael_df['name'])]
 dde_df_md5ko_notinazrael.to_csv(join(root_path, "dde_df_md5ko_notinazrael.csv.gz"), index=False)
 print(len(dde_df_md5ko_notinazrael))
+
+ensemble = pd.concat([dde_df_md5ok_notinazrael, dde_df_md5ko_notinazrael])
+ensemble.to_csv(join(root_path, "dde_notinazrael.csv.gz"), index=False)
