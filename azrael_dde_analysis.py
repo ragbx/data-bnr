@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 
 root_path = "data"
-#file_name = join(root_path, "bnr_dXXX_20231230.csv.gz")
+file_name = join(root_path, "bnr_dXXX_20231230.csv.gz")
 #file_name = join(root_path, "bnr_d001_20231218.csv.gz")
-file_name = join(root_path, "dde_notinazrael.csv.gz")
+#file_name = join(root_path, "dde_notinazrael.csv.gz")
 
 az2a = azrael.Azrael2analysis()
 az2a.create_az(path_az=file_name)
@@ -25,7 +25,7 @@ df['nb'] = 1
 
 #table.to_excel("results/dXX_notinazrael_analyse.xlsx")
 
-df['size_mo'] = df['size'].apply(lambda x: azrael.convert_size(x, to_size='mo'))
+df['size_mo'] = 
 
 prefixes = df['prefix'].unique()
 for prefix in np.sort(prefixes):
